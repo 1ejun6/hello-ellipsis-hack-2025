@@ -12,7 +12,7 @@ import {
 import { useState } from 'react';
 
 
-export function Hero() {
+export function Translation() {
 
   // Speech recognition
   const [translation, setTranslation] = useState<string>("");
@@ -91,8 +91,6 @@ export function Hero() {
       />
     </div>
 
-    
-
       {/* Points System NEED TO CHANGE */}
       <div className="flex justify-start gap-2 bg-muted px-4 py-2 rounded-lg shadow">
         <span className="font-semibold">Points:</span>
@@ -141,26 +139,6 @@ export function Hero() {
       <button onClick={handleOnRecord}>Record</button>
 
       <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
-      {/* <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center">
-        The right way to build apps with{" "}
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Supabase
-        </a>{" "}
-        and{" "}
-        <a
-          href="https://nextjs.org/"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Next.js
-        </a>
-      </p> */}
       <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent my-8" />
     </div>
   );
