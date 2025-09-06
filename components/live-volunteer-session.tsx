@@ -1,48 +1,101 @@
-'use client';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+export async function POST(req: Request) {
+  const supabase = await createClient();
 
-export default function LiveVolunteerPage() {
-  const [description, setDescription] = useState('');
-  const router = useRouter();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    const res = await fetch('/api/create-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ description }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      const tgBotUsername = process.env.NEXT_PUBLIC_WORKER_BOT || 'MigrantHelperBot';
-      const startUrl = `https://t.me/${tgBotUsername}?start=${data.session_uid}`;
-      router.push(startUrl);
-    } else {
-      alert(data.error || 'Failed to create session');
-    }
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        required
-        rows={6}
-        placeholder="Describe your help request"
-        className="w-full p-4 border rounded"
-      />
-      <button type="submit" className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
-        Request Help
-      </button>
-    </form>
-  );
+  const body = await req.json();
+  const { description } = body;
+
+  if (!description) {
+    return NextResponse.json({ error: 'Missing description' }, { status: 400 });
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('language, role')
+    .eq('auth_id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+  }
+
+  if (profile.role !== 'migrant') {
+    return NextResponse.json({ error: 'Only migrant role can create sessions' }, { status: 403 });
+  }
+
+  const { data, error } = await supabase
+    .from('live_volunteer_sessions')
+    .insert({
+      worker_id: user.id,
+      language: profile.language,
+      description,
+      status: 'waiting',
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || 'Failed to create session' }, { status: 500 });
+  }
+
+  console.log('Session created with UID:', data.uid);
+
+  try {
+    await sendTelegramMessage(profile.language, description, data.uid);
+  } catch (err) {
+    console.error('Failed to send Telegram message:', err);
+  }
+
+  return NextResponse.json({ session_uid: data.uid });
+}
+
+async function sendTelegramMessage(language: string, description: string, sessionUid: string) {
+  const volunteerBotToken = process.env.VOLUNTEER_BOT_TOKEN;
+  const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+  const migrantBotUsername = process.env.MIGRANT_BOT_USERNAME || 'MigrantHelperBot';
+
+  if (!volunteerBotToken || !telegramChatId) {
+    console.error('Missing TELEGRAM_CHAT_ID or VOLUNTEER_BOT_TOKEN in environment variables');
+    return;
+  }
+
+  if (!sessionUid || typeof sessionUid !== 'string' || sessionUid.trim() === '') {
+    console.error('Invalid session UID:', sessionUid);
+    return;
+  }
+
+  const startUrl = `https://t.me/${migrantBotUsername}?start=${encodeURIComponent(sessionUid)}`;
+  console.log('Sending Telegram message with start URL:', startUrl);
+
+  const message = `📢 *New Help Request*\n\n*Language:* ${escapeMarkdown(language)}\n*Description:* ${escapeMarkdown(description)}\n\n🔗 [Open Chat with Migrant Bot](${startUrl})`;
+
+  const response = await fetch(`https://api.telegram.org/bot${volunteerBotToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: telegramChatId,
+      text: message,
+      parse_mode: 'MarkdownV2',
+      disable_web_page_preview: true,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.ok) {
+    console.error('Telegram API error:', result);
+  }
+}
+
+function escapeMarkdown(text: string) {
+  return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
