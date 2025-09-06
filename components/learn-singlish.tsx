@@ -8,6 +8,30 @@ import {
 } from "@/components/ui/dropdown-menu"; // adjust path to your dropdown-menu.tsx
 import { useState } from 'react';
 
+export function ThemeSelection(){
+  return(
+  <div className="flex justify-between items-center w-full max-w-5xl p-5">
+        {/* Choose the theme */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="px-4 py-2 bg-red-500 text-white rounded-md">
+            Choose Theme
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem>Food</DropdownMenuItem>
+            <DropdownMenuItem>Hospital</DropdownMenuItem>
+            <DropdownMenuItem>Pay Bills</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Points System NEED TO CHANGE */}
+        <div className="flex justify-start gap-2 bg-muted px-4 py-2 rounded-lg shadow">
+          <span className="font-semibold">Points:</span>
+          <span className="text-primary font-bold">{10}</span>
+        </div>
+      </div>
+  )
+} 
+
 export function Translation() {
 
   // Speech recognition
@@ -17,7 +41,7 @@ export function Translation() {
   function handleOnRecord() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-
+    recognition.lang="zh-CN"; // Changes according to language of user
     recognition.start();
 
     recognition.onresult = async function(event) {
@@ -41,6 +65,7 @@ export function Translation() {
   return (
 
       <div className="flex flex-col items-center">
+      
       <Image
         src="/teaching-mascot.png" 
         alt="My Logo"
@@ -48,53 +73,19 @@ export function Translation() {
         height={200}
       />
 
-      {/* Points System NEED TO CHANGE */}
-      <div className="flex justify-start gap-2 bg-muted px-4 py-2 rounded-lg shadow">
-        <span className="font-semibold">Points:</span>
-        <span className="text-primary font-bold">{10}</span>
+      <div className="bg=gray-500 p-4 rounded-lg w-full">
+        <p>
+         Spoken Text: { text }
+        </p>
       </div>
 
-      {/* Choose the theme */}
-      <DropdownMenu>
-        <DropdownMenuTrigger className="px-4 py-2 bg-red-500 text-white rounded-md">
-          Choose Theme
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem>Food</DropdownMenuItem>
-          <DropdownMenuItem>Hospital</DropdownMenuItem>
-          <DropdownMenuItem>Pay Bills</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="bg=gray-500 p-4 rounded-lg w-full">
+        <p>
+          Translation: { translation }
+        </p>
+      </div>
 
-      <p>
-        Spoken Text: { text }
-      </p>
-
-      <p>
-        Translation: { translation }
-      </p>
-
-      <div className="flex flex-col items-center gap-4">
-      <input
-        type="text"
-        placeholder="Enter your native language"
-        defaultValue="特別好吃"
-        id="nativeLang"
-        className="border px-2 py-1 rounded"
-      />
-    </div>
-
-    <div className="flex flex-col items-center gap-4">
-      <input
-        type="text"
-        // placeholder="Enter your native language"
-        defaultValue="You can say 'Shiok ah'!"
-        id="nameInput"
-        className="border px-2 py-1 rounded"
-      />
-    </div>
-      <button onClick={handleOnRecord}>Record</button>
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent my-8" />
+      <button className="bg-red-500 text-white font-bold py-2 px-4 rounded mt-2" onClick={handleOnRecord}>Record</button>
     </div>
     
   );
