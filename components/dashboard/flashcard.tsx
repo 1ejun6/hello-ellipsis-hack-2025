@@ -17,17 +17,17 @@ export default function Flashcard() {
   const findAnswer = () => {
     let answerIndex = 0;
     if (currentCard && currentCard.quiz) {
-  const correctList = currentCard.quiz.correct_answers;
+      const correctList = currentCard.quiz.correctAnswers;
 
-    if (correctList && correctList.length > 0) {
-      setAnswer(correctList[0]); // or show all
+      if (correctList && correctList.length > 0) {
+        setAnswer(correctList[0]); // or show all
+      }
     }
-  }
   };
 
   useEffect(() => {
     if (data.length > 0) {
-      const card = {
+      const card: ICard = {
         quiz: data[0],
         flipped: false,
       };
@@ -42,7 +42,7 @@ export default function Flashcard() {
   const handleOnPrevious = () => {
     if (currentIdx > 1) {
       setCurrentIdx(currentIdx - 1);
-      const card = {
+      const card: ICard = {
         quiz: data[currentIdx - 2],
         flipped: false,
       };
@@ -53,14 +53,13 @@ export default function Flashcard() {
   const handleOnNext = () => {
     if (currentIdx < data.length) {
       setCurrentIdx(currentIdx + 1);
-      const card = {
+      const card: ICard = {
         quiz: data[currentIdx],
         flipped: false,
       };
       setCurrentCard(card);
     }
   };
-  
 
   return (
     <>
@@ -71,14 +70,13 @@ export default function Flashcard() {
               "relative w-full h-full transition-all rounded-lg shadow-lg bg-orange-200 duration-500 [transform-style:preserve-3d] [backface-visibility:hidden] hover:[transform:rotateY(180deg)]"
             }
           >
-            {/*card content on front side*/}
+            {/* Front side of the card */}
             <div className="absolute inset-0 overflow-y-auto">
-              {currentCard && currentCard.quiz ? (
+              {currentCard.quiz ? (
                 <div className="px-6 py-4">
                   <p className="text-gray-700 text-base font-bold text-xl">
                     {currentCard.quiz.question}
                   </p>
-                  <br />
                 </div>
               ) : (
                 <div className="px-6 py-4">
@@ -88,16 +86,18 @@ export default function Flashcard() {
                 </div>
               )}
             </div>
-            {/*card content on back side*/}
+
+            {/* Back side of the card */}
             <div className="absolute inset-0 rounded-lg shadow-lg bg-orange-200 [transform:rotateY(180deg)] [backface-visibility:hidden]">
-              {currentCard ? (
+              {currentCard.quiz ? (
                 <div className="px-6 py-4">
                   <p className="text-gray-700 text-base font-bold text-xl">
                     <ul className="list-disc pl-6 text-xl">
-                    {Object.values(currentCard.quiz.correctAnswers).map(
-                      (value, index) => value && <li key={index}>{value}</li>,
-                    )}
-                  </ul>
+                      {currentCard.quiz.correctAnswers.map(
+                        (value, index) =>
+                          value && <li key={index}>{value}</li>
+                      )}
+                    </ul>
                   </p>
                 </div>
               ) : (
@@ -109,7 +109,9 @@ export default function Flashcard() {
               )}
             </div>
           </div>
-            <div className="mt-4 flex">
+
+          {/* Navigation buttons */}
+          <div className="mt-4 flex">
             <button className="text-3xl" onClick={handleOnPrevious}>
               <GrFormPreviousLink />
             </button>
@@ -118,8 +120,6 @@ export default function Flashcard() {
             </button>
           </div>
         </div>
-
-        
       )}
     </>
   );
