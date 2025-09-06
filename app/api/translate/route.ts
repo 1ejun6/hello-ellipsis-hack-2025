@@ -4,14 +4,13 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(request: Request) {
-  const { text, language } = await request.json();
+  const { text } = await request.json();
+
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    // Use 'contents' instead of 'messages'
     contents: [
       {
         role: "user",
-        // The content itself goes in 'parts'
         parts: [
           {
             text: `
@@ -25,15 +24,10 @@ export async function POST(request: Request) {
         ],
       },
     ],
-    temperature: 0.7,
-    max_tokens: 64,
-    top_p: 1,
   });
 
-  // The response structure is different from OpenAI
-  const translatedText = response.candidates[0].content.parts[0].text;
+  const translatedText =
+    response.candidates?.[0]?.content?.parts?.[0]?.text ?? "Translation unavailable";
 
-  return NextResponse.json({
-    text: translatedText,
-  });
+  return NextResponse.json({ text: translatedText });
 }
