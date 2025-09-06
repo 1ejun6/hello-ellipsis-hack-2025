@@ -1,6 +1,6 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import { AuthButton } from "@/components/auth-button";
-import { Translation } from "@/components/learn-singlish";
+import { ThemeSelection, Translation } from "@/components/learn-singlish";
 import Flashcard from "@/components/dashboard/flashcard";
 
 export default function MeltingPotPage() {
@@ -8,7 +8,10 @@ export default function MeltingPotPage() {
       // <p>Melting Pot</p>
 
       <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
+      <div className="flex-1 w-full flex flex-col gap-10 items-center">
+        <div className="flex-1 flex flex-col p-5 w-full">
+          <ThemeSelection />
+        </div>
         <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
           <div className="flex justify-center p-3 bg-blue-500">
             <p className="text-2xl font-bold [font-family:Georgia,serif]">
