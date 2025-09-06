@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
-  // IMPORTANT: pass cookies to supabase client for auth session
   const supabase = await createClient({
     headers: {
       cookie: req.headers.get('cookie') ?? '',
@@ -11,10 +10,7 @@ export async function POST(req: Request) {
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  console.log('User fetch result:', { user, userError });
-
   if (userError || !user) {
-    console.error('Unauthorized access attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -22,7 +18,6 @@ export async function POST(req: Request) {
   const { description } = body;
 
   if (!description) {
-    console.error('Missing description in request body');
     return NextResponse.json({ error: 'Missing description' }, { status: 400 });
   }
 
@@ -32,15 +27,11 @@ export async function POST(req: Request) {
     .eq('auth_id', user.id)
     .single();
 
-  console.log('Profile fetch result:', { profile, profileError, userId: user.id });
-
   if (profileError || !profile) {
-    console.error(`Profile not found for user id: ${user.id}`, profileError);
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
   if (profile.role !== 'migrant') {
-    console.error(`User role is '${profile.role}', only 'migrant' can create sessions.`);
     return NextResponse.json({ error: 'Only migrant role can create sessions' }, { status: 403 });
   }
 
@@ -56,12 +47,60 @@ export async function POST(req: Request) {
     .select()
     .single();
 
-  if (error) {
-    console.error('Error inserting session:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || 'Failed to create session' }, { status: 500 });
   }
 
   console.log('Session created with UID:', data.uid);
 
+  try {
+    await sendTelegramMessage(profile.language, description, data.uid);
+  } catch (err) {
+    console.error('Failed to send Telegram message:', err);
+  }
+
   return NextResponse.json({ session_uid: data.uid });
+}
+
+async function sendTelegramMessage(language: string, description: string, sessionUid: string) {
+  const volunteerBotToken = process.env.VOLUNTEER_BOT_TOKEN;
+  const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+  const botUsername = process.env.WORKER_BOT_TOKEN || 'MigrantHelperBot';
+
+  if (!volunteerBotToken || !telegramChatId) {
+    console.error('Missing TELEGRAM_CHAT_ID or VOLUNTEER_BOT_TOKEN in environment variables');
+    return;
+  }
+
+  if (!botUsername) {
+    console.error('Bot username is not set!');
+    return;
+  }
+
+  if (!sessionUid || typeof sessionUid !== 'string' || sessionUid.trim() === '') {
+    console.error('Invalid session UID:', sessionUid);
+    return;
+  }
+
+  const startUrl = `https://t.me/${botUsername}?start=${encodeURIComponent(sessionUid)}`;
+  console.log('Sending Telegram message with start URL:', startUrl);
+
+  const message = `📢 *New Help Request*\n\n*Language:* ${language}\n*Description:* ${description}\n\n🔗 [Open Bot](${startUrl})`;
+
+  const response = await fetch(`https://api.telegram.org/bot${volunteerBotToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: telegramChatId,
+      text: message,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.ok) {
+    console.error('Telegram API error:', result);
+  }
 }

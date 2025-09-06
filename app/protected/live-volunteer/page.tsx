@@ -19,8 +19,15 @@ export default function LiveVolunteerPage() {
     const data = await res.json();
 
     if (res.ok) {
-      const tgBotUsername = process.env.NEXT_PUBLIC_WORKER_BOT || 'MigrantHelperBot';
-      const startUrl = `https://t.me/${tgBotUsername}?start=${data.session_uid}`;
+      const { session_uid } = data;
+      const tgBotUsername = process.env.WORKER_BOT_TOKEN || 'MigrantHelperBot';
+
+      if (!session_uid) {
+        alert('Invalid session id');
+        return;
+      }
+
+      const startUrl = `https://t.me/${tgBotUsername}?start=${encodeURIComponent(session_uid)}`;
       router.push(startUrl);
     } else {
       alert(data.error || 'Failed to create session');
@@ -28,7 +35,7 @@ export default function LiveVolunteerPage() {
   }
 
   return (
-    <div className="transition-colors">
+    <div className="min-h-screen transition-colors">
       <div className="max-w-xl w-full p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <h1 className="text-center text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">
           How can we help you today?
